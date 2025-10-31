@@ -84,6 +84,61 @@
             min-height: 80px;
         }
         
+        .photo-upload-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .photo-upload-box {
+            flex: 1;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .photo-upload-box:hover {
+            border-color: #2563eb;
+        }
+        
+        .photo-upload-box img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .photo-upload-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .photo-upload-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .photo-preview {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .photo-preview img {
+            width: calc(50% - 5px);
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
         .stars {
             display: flex;
             gap: 5px;
@@ -229,6 +284,28 @@
     
     <div class="form-container" id="formContainer">
         <h2 id="formTitle">新規登録</h2>
+        
+        <div class="section-title">写真</div>
+        
+        <div class="photo-upload-container">
+            <div class="photo-upload-box" onclick="document.getElementById('frontPhoto').click()">
+                <img id="frontPreview" style="display: none;">
+                <div id="frontPlaceholder">
+                    <div class="photo-upload-label">表ラベル</div>
+                    <div class="photo-upload-text">📷 タップして追加</div>
+                </div>
+                <input type="file" id="frontPhoto" accept="image/*" onchange="handlePhotoUpload('front')">
+            </div>
+            
+            <div class="photo-upload-box" onclick="document.getElementById('backPhoto').click()">
+                <img id="backPreview" style="display: none;">
+                <div id="backPlaceholder">
+                    <div class="photo-upload-label">裏ラベル</div>
+                    <div class="photo-upload-text">📷 タップして追加</div>
+                </div>
+                <input type="file" id="backPhoto" accept="image/*" onchange="handlePhotoUpload('back')">
+            </div>
+        </div>
         
         <div class="section-title">基本情報</div>
         
@@ -397,6 +474,8 @@
         let tasteRatingValue = 0;
         let recommendRatingValue = 0;
         let editingId = null;
+        let frontPhotoData = null;
+        let backPhotoData = null;
         
         // ページ読み込み時にデータを復元
         window.onload = function() {
@@ -407,6 +486,29 @@
             }
             updateStats();
         };
+        
+        // 写真アップロード処理
+        function handlePhotoUpload(type) {
+            const input = document.getElementById(type + 'Photo');
+            const preview = document.getElementById(type + 'Preview');
+            const placeholder = document.getElementById(type + 'Placeholder');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    if (type === 'front') {
+                        frontPhotoData = e.target.result;
+                    } else {
+                        backPhotoData = e.target.result;
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
         
         // 星評価の設定
         document.querySelectorAll('.stars').forEach(container => {
@@ -459,7 +561,9 @@
                 tasteRating: tasteRatingValue,
                 recommendRating: recommendRatingValue,
                 memo: document.getElementById('memo').value,
-                place: document.getElementById('place').value
+                place: document.getElementById('place').value,
+                frontPhoto: frontPhotoData,
+                backPhoto: backPhotoData
             };
             
             if (editingId) {
@@ -494,6 +598,22 @@
             document.getElementById('hiire').value = sake.hiire || '';
             document.getElementById('memo').value = sake.memo || '';
             document.getElementById('place').value = sake.place || '';
+            
+            // 写真をセット
+            frontPhotoData = sake.frontPhoto || null;
+            backPhotoData = sake.backPhoto || null;
+            
+            if (frontPhotoData) {
+                document.getElementById('frontPreview').src = frontPhotoData;
+                document.getElementById('frontPreview').style.display = 'block';
+                document.getElementById('frontPlaceholder').style.display = 'none';
+            }
+            
+            if (backPhotoData) {
+                document.getElementById('backPreview').src = backPhotoData;
+                document.getElementById('backPreview').style.display = 'block';
+                document.getElementById('backPlaceholder').style.display = 'none';
+            }
             
             // 星評価をセット
             tasteRatingValue = sake.tasteRating || 0;
@@ -533,6 +653,16 @@
             recommendRatingValue = 0;
             document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
             
+            // 写真をクリア
+            frontPhotoData = null;
+            backPhotoData = null;
+            document.getElementById('frontPreview').style.display = 'none';
+            document.getElementById('frontPlaceholder').style.display = 'block';
+            document.getElementById('backPreview').style.display = 'none';
+            document.getElementById('backPlaceholder').style.display = 'block';
+            document.getElementById('frontPhoto').value = '';
+            document.getElementById('backPhoto').value = '';
+            
             // 編集モードを解除
             editingId = null;
             document.getElementById('formTitle').textContent = '新規登録';
@@ -558,30 +688,45 @@
                 return;
             }
             
-            listDiv.innerHTML = collection.map(sake => `
-                <div class="sake-item">
-                    <div class="action-buttons">
-                        <button class="edit-btn" onclick="editSake(${sake.id})">編集</button>
-                        <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+            listDiv.innerHTML = collection.map(sake => {
+                let photoHtml = '';
+                if (sake.frontPhoto || sake.backPhoto) {
+                    photoHtml = '<div class="photo-preview">';
+                    if (sake.frontPhoto) {
+                        photoHtml += `<img src="${sake.frontPhoto}" alt="表ラベル">`;
+                    }
+                    if (sake.backPhoto) {
+                        photoHtml += `<img src="${sake.backPhoto}" alt="裏ラベル">`;
+                    }
+                    photoHtml += '</div>';
+                }
+                
+                return `
+                    <div class="sake-item">
+                        <div class="action-buttons">
+                            <button class="edit-btn" onclick="editSake(${sake.id})">編集</button>
+                            <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+                        </div>
+                        ${photoHtml}
+                        <div class="sake-name">${sake.name}</div>
+                        <div class="sake-info">
+                            ${sake.brewery} (${sake.prefecture})
+                            ${sake.classification ? '<span class="badge">' + sake.classification + '</span>' : ''}
+                        </div>
+                        ${sake.date ? '<div class="sake-info">📅 ' + sake.date + '</div>' : ''}
+                        ${sake.nihonshuDo ? '<div class="sake-info">日本酒度: ' + sake.nihonshuDo + '</div>' : ''}
+                        ${sake.seimaibuai ? '<div class="sake-info">精米歩合: ' + sake.seimaibuai + '</div>' : ''}
+                        ${sake.alcohol ? '<div class="sake-info">アルコール度数: ' + sake.alcohol + '</div>' : ''}
+                        ${sake.hiire ? '<div class="sake-info">火入れ: ' + sake.hiire + '</div>' : ''}
+                        ${sake.place ? '<div class="sake-info">📍 ' + sake.place + '</div>' : ''}
+                        <div class="sake-info">
+                            味の評価: ${'★'.repeat(sake.tasteRating)}${'☆'.repeat(5-sake.tasteRating)}
+                            おすすめ度: ${'★'.repeat(sake.recommendRating)}${'☆'.repeat(5-sake.recommendRating)}
+                        </div>
+                        ${sake.memo ? '<div class="sake-memo">' + sake.memo + '</div>' : ''}
                     </div>
-                    <div class="sake-name">${sake.name}</div>
-                    <div class="sake-info">
-                        ${sake.brewery} (${sake.prefecture})
-                        ${sake.classification ? '<span class="badge">' + sake.classification + '</span>' : ''}
-                    </div>
-                    ${sake.date ? '<div class="sake-info">📅 ' + sake.date + '</div>' : ''}
-                    ${sake.nihonshuDo ? '<div class="sake-info">日本酒度: ' + sake.nihonshuDo + '</div>' : ''}
-                    ${sake.seimaibuai ? '<div class="sake-info">精米歩合: ' + sake.seimaibuai + '</div>' : ''}
-                    ${sake.alcohol ? '<div class="sake-info">アルコール度数: ' + sake.alcohol + '</div>' : ''}
-                    ${sake.hiire ? '<div class="sake-info">火入れ: ' + sake.hiire + '</div>' : ''}
-                    ${sake.place ? '<div class="sake-info">📍 ' + sake.place + '</div>' : ''}
-                    <div class="sake-info">
-                        味の評価: ${'★'.repeat(sake.tasteRating)}${'☆'.repeat(5-sake.tasteRating)}
-                        おすすめ度: ${'★'.repeat(sake.recommendRating)}${'☆'.repeat(5-sake.recommendRating)}
-                    </div>
-                    ${sake.memo ? '<div class="sake-memo">' + sake.memo + '</div>' : ''}
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
         
         function updateStats() {
