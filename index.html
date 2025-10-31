@@ -116,6 +116,15 @@
             background: #1d4ed8;
         }
         
+        .cancel-btn {
+            background: #6b7280;
+            margin-top: 5px;
+        }
+        
+        .cancel-btn:hover {
+            background: #4b5563;
+        }
+        
         .sake-item {
             background: #f9fafb;
             padding: 15px;
@@ -154,15 +163,31 @@
             margin-right: 5px;
         }
         
-        .delete-btn {
-            background: #dc2626;
+        .action-buttons {
+            float: right;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .edit-btn, .delete-btn {
             color: white;
             border: none;
             padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 12px;
-            float: right;
+        }
+        
+        .edit-btn {
+            background: #059669;
+        }
+        
+        .edit-btn:hover {
+            background: #047857;
+        }
+        
+        .delete-btn {
+            background: #dc2626;
         }
         
         .delete-btn:hover {
@@ -181,6 +206,11 @@
             margin-bottom: 10px;
             color: #2563eb;
         }
+        
+        .edit-mode {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+        }
     </style>
 </head>
 <body>
@@ -197,8 +227,8 @@
         </div>
     </div>
     
-    <div class="form-container">
-        <h2>新規登録</h2>
+    <div class="form-container" id="formContainer">
+        <h2 id="formTitle">新規登録</h2>
         
         <div class="section-title">基本情報</div>
         
@@ -348,7 +378,8 @@
             <input type="text" id="place" placeholder="例: 自宅、居酒屋◯◯">
         </div>
         
-        <button onclick="addSake()">登録する</button>
+        <button onclick="saveSake()" id="saveBtn">登録する</button>
+        <button onclick="cancelEdit()" id="cancelBtn" class="cancel-btn" style="display: none;">キャンセル</button>
     </div>
     
     <div class="list-container">
@@ -365,6 +396,7 @@
         let collection = [];
         let tasteRatingValue = 0;
         let recommendRatingValue = 0;
+        let editingId = null;
         
         // ページ読み込み時にデータを復元
         window.onload = function() {
@@ -403,7 +435,7 @@
             });
         }
         
-        function addSake() {
+        function saveSake() {
             const name = document.getElementById('name').value;
             const brewery = document.getElementById('brewery').value;
             const prefecture = document.getElementById('prefecture').value;
@@ -414,7 +446,7 @@
             }
             
             const sake = {
-                id: Date.now(),
+                id: editingId || Date.now(),
                 name: name,
                 brewery: brewery,
                 prefecture: prefecture,
@@ -430,10 +462,62 @@
                 place: document.getElementById('place').value
             };
             
-            collection.push(sake);
-            localStorage.setItem('sakeCollection', JSON.stringify(collection));
+            if (editingId) {
+                // 編集モード：既存のアイテムを更新
+                collection = collection.map(item => item.id === editingId ? sake : item);
+                alert('更新しました！');
+            } else {
+                // 新規登録モード
+                collection.push(sake);
+                alert('登録しました！');
+            }
             
-            // フォームをリセット
+            localStorage.setItem('sakeCollection', JSON.stringify(collection));
+            resetForm();
+            displayCollection();
+            updateStats();
+        }
+        
+        function editSake(id) {
+            const sake = collection.find(item => item.id === id);
+            if (!sake) return;
+            
+            // フォームに値をセット
+            document.getElementById('name').value = sake.name;
+            document.getElementById('brewery').value = sake.brewery;
+            document.getElementById('prefecture').value = sake.prefecture;
+            document.getElementById('date').value = sake.date || '';
+            document.getElementById('classification').value = sake.classification || '';
+            document.getElementById('nihonshuDo').value = sake.nihonshuDo || '';
+            document.getElementById('seimaibuai').value = sake.seimaibuai || '';
+            document.getElementById('alcohol').value = sake.alcohol || '';
+            document.getElementById('hiire').value = sake.hiire || '';
+            document.getElementById('memo').value = sake.memo || '';
+            document.getElementById('place').value = sake.place || '';
+            
+            // 星評価をセット
+            tasteRatingValue = sake.tasteRating || 0;
+            recommendRatingValue = sake.recommendRating || 0;
+            updateStars(document.getElementById('tasteRating'), tasteRatingValue);
+            updateStars(document.getElementById('recommendRating'), recommendRatingValue);
+            
+            // 編集モードに切り替え
+            editingId = id;
+            document.getElementById('formTitle').textContent = '編集';
+            document.getElementById('saveBtn').textContent = '更新する';
+            document.getElementById('cancelBtn').style.display = 'block';
+            document.getElementById('formContainer').classList.add('edit-mode');
+            
+            // フォームまでスクロール
+            document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function cancelEdit() {
+            resetForm();
+        }
+        
+        function resetForm() {
+            // フォームをクリア
             document.getElementById('name').value = '';
             document.getElementById('brewery').value = '';
             document.getElementById('prefecture').value = '';
@@ -449,9 +533,12 @@
             recommendRatingValue = 0;
             document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
             
-            displayCollection();
-            updateStats();
-            alert('登録しました！');
+            // 編集モードを解除
+            editingId = null;
+            document.getElementById('formTitle').textContent = '新規登録';
+            document.getElementById('saveBtn').textContent = '登録する';
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('formContainer').classList.remove('edit-mode');
         }
         
         function deleteSake(id) {
@@ -473,7 +560,10 @@
             
             listDiv.innerHTML = collection.map(sake => `
                 <div class="sake-item">
-                    <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+                    <div class="action-buttons">
+                        <button class="edit-btn" onclick="editSake(${sake.id})">編集</button>
+                        <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+                    </div>
                     <div class="sake-name">${sake.name}</div>
                     <div class="sake-info">
                         ${sake.brewery} (${sake.prefecture})
