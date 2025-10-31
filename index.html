@@ -266,6 +266,80 @@
             background: #fef3c7;
             border: 2px solid #f59e0b;
         }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .prefecture-group {
+            margin-bottom: 20px;
+        }
+        
+        .prefecture-header {
+            background: #2563eb;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        
+        .prefecture-header:hover {
+            background: #1d4ed8;
+        }
+        
+        .prefecture-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .prefecture-count {
+            background: rgba(255,255,255,0.3);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        
+        .prefecture-items {
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .prefecture-items.open {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -461,7 +535,19 @@
     
     <div class="list-container">
         <h2>コレクション一覧</h2>
-        <div id="sakeList"></div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('all')">すべて</button>
+            <button class="tab" onclick="switchTab('prefecture')">都道府県別</button>
+        </div>
+        
+        <div id="allTab" class="tab-content active">
+            <div id="sakeList"></div>
+        </div>
+        
+        <div id="prefectureTab" class="tab-content">
+            <div id="prefectureList"></div>
+        </div>
     </div>
 
     <script>
@@ -476,6 +562,7 @@
         let editingId = null;
         let frontPhotoData = null;
         let backPhotoData = null;
+        let currentTab = 'all';
         
         // ページ読み込み時にデータを復元
         window.onload = function() {
@@ -483,9 +570,34 @@
             if (saved) {
                 collection = JSON.parse(saved);
                 displayCollection();
+                displayPrefectureList();
             }
             updateStats();
         };
+        
+        // タブ切り替え
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // タブのアクティブ状態を切り替え
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'all') {
+                document.querySelector('.tab:first-child').classList.add('active');
+                document.getElementById('allTab').classList.add('active');
+            } else {
+                document.querySelector('.tab:last-child').classList.add('active');
+                document.getElementById('prefectureTab').classList.add('active');
+                displayPrefectureList();
+            }
+        }
+        
+        // 都道府県グループの開閉
+        function togglePrefecture(prefecture) {
+            const items = document.getElementById('pref-' + prefecture.replace(/[都道府県]/g, ''));
+            items.classList.toggle('open');
+        }
         
         // 写真アップロード処理
         function handlePhotoUpload(type) {
@@ -567,11 +679,9 @@
             };
             
             if (editingId) {
-                // 編集モード：既存のアイテムを更新
                 collection = collection.map(item => item.id === editingId ? sake : item);
                 alert('更新しました！');
             } else {
-                // 新規登録モード
                 collection.push(sake);
                 alert('登録しました！');
             }
@@ -579,6 +689,7 @@
             localStorage.setItem('sakeCollection', JSON.stringify(collection));
             resetForm();
             displayCollection();
+            displayPrefectureList();
             updateStats();
         }
         
@@ -586,7 +697,6 @@
             const sake = collection.find(item => item.id === id);
             if (!sake) return;
             
-            // フォームに値をセット
             document.getElementById('name').value = sake.name;
             document.getElementById('brewery').value = sake.brewery;
             document.getElementById('prefecture').value = sake.prefecture;
@@ -599,7 +709,6 @@
             document.getElementById('memo').value = sake.memo || '';
             document.getElementById('place').value = sake.place || '';
             
-            // 写真をセット
             frontPhotoData = sake.frontPhoto || null;
             backPhotoData = sake.backPhoto || null;
             
@@ -615,20 +724,17 @@
                 document.getElementById('backPlaceholder').style.display = 'none';
             }
             
-            // 星評価をセット
             tasteRatingValue = sake.tasteRating || 0;
             recommendRatingValue = sake.recommendRating || 0;
             updateStars(document.getElementById('tasteRating'), tasteRatingValue);
             updateStars(document.getElementById('recommendRating'), recommendRatingValue);
             
-            // 編集モードに切り替え
             editingId = id;
             document.getElementById('formTitle').textContent = '編集';
             document.getElementById('saveBtn').textContent = '更新する';
             document.getElementById('cancelBtn').style.display = 'block';
             document.getElementById('formContainer').classList.add('edit-mode');
             
-            // フォームまでスクロール
             document.getElementById('formContainer').scrollIntoView({ behavior: 'smooth' });
         }
         
@@ -637,7 +743,6 @@
         }
         
         function resetForm() {
-            // フォームをクリア
             document.getElementById('name').value = '';
             document.getElementById('brewery').value = '';
             document.getElementById('prefecture').value = '';
@@ -653,7 +758,6 @@
             recommendRatingValue = 0;
             document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
             
-            // 写真をクリア
             frontPhotoData = null;
             backPhotoData = null;
             document.getElementById('frontPreview').style.display = 'none';
@@ -663,7 +767,6 @@
             document.getElementById('frontPhoto').value = '';
             document.getElementById('backPhoto').value = '';
             
-            // 編集モードを解除
             editingId = null;
             document.getElementById('formTitle').textContent = '新規登録';
             document.getElementById('saveBtn').textContent = '登録する';
@@ -676,8 +779,49 @@
                 collection = collection.filter(sake => sake.id !== id);
                 localStorage.setItem('sakeCollection', JSON.stringify(collection));
                 displayCollection();
+                displayPrefectureList();
                 updateStats();
             }
+        }
+        
+        function renderSakeItem(sake) {
+            let photoHtml = '';
+            if (sake.frontPhoto || sake.backPhoto) {
+                photoHtml = '<div class="photo-preview">';
+                if (sake.frontPhoto) {
+                    photoHtml += `<img src="${sake.frontPhoto}" alt="表ラベル">`;
+                }
+                if (sake.backPhoto) {
+                    photoHtml += `<img src="${sake.backPhoto}" alt="裏ラベル">`;
+                }
+                photoHtml += '</div>';
+            }
+            
+            return `
+                <div class="sake-item">
+                    <div class="action-buttons">
+                        <button class="edit-btn" onclick="editSake(${sake.id})">編集</button>
+                        <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+                    </div>
+                    ${photoHtml}
+                    <div class="sake-name">${sake.name}</div>
+                    <div class="sake-info">
+                        ${sake.brewery} (${sake.prefecture})
+                        ${sake.classification ? '<span class="badge">' + sake.classification + '</span>' : ''}
+                    </div>
+                    ${sake.date ? '<div class="sake-info">📅 ' + sake.date + '</div>' : ''}
+                    ${sake.nihonshuDo ? '<div class="sake-info">日本酒度: ' + sake.nihonshuDo + '</div>' : ''}
+                    ${sake.seimaibuai ? '<div class="sake-info">精米歩合: ' + sake.seimaibuai + '</div>' : ''}
+                    ${sake.alcohol ? '<div class="sake-info">アルコール度数: ' + sake.alcohol + '</div>' : ''}
+                    ${sake.hiire ? '<div class="sake-info">火入れ: ' + sake.hiire + '</div>' : ''}
+                    ${sake.place ? '<div class="sake-info">📍 ' + sake.place + '</div>' : ''}
+                    <div class="sake-info">
+                        味の評価: ${'★'.repeat(sake.tasteRating)}${'☆'.repeat(5-sake.tasteRating)}
+                        おすすめ度: ${'★'.repeat(sake.recommendRating)}${'☆'.repeat(5-sake.recommendRating)}
+                    </div>
+                    ${sake.memo ? '<div class="sake-memo">' + sake.memo + '</div>' : ''}
+                </div>
+            `;
         }
         
         function displayCollection() {
@@ -688,42 +832,42 @@
                 return;
             }
             
-            listDiv.innerHTML = collection.map(sake => {
-                let photoHtml = '';
-                if (sake.frontPhoto || sake.backPhoto) {
-                    photoHtml = '<div class="photo-preview">';
-                    if (sake.frontPhoto) {
-                        photoHtml += `<img src="${sake.frontPhoto}" alt="表ラベル">`;
-                    }
-                    if (sake.backPhoto) {
-                        photoHtml += `<img src="${sake.backPhoto}" alt="裏ラベル">`;
-                    }
-                    photoHtml += '</div>';
+            listDiv.innerHTML = collection.map(renderSakeItem).join('');
+        }
+        
+        function displayPrefectureList() {
+            const listDiv = document.getElementById('prefectureList');
+            
+            if (collection.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center;color:#999;">まだ登録されていません</p>';
+                return;
+            }
+            
+            // 都道府県ごとにグループ化
+            const grouped = {};
+            collection.forEach(sake => {
+                if (!grouped[sake.prefecture]) {
+                    grouped[sake.prefecture] = [];
                 }
+                grouped[sake.prefecture].push(sake);
+            });
+            
+            // 都道府県名でソート
+            const sortedPrefectures = Object.keys(grouped).sort();
+            
+            listDiv.innerHTML = sortedPrefectures.map(pref => {
+                const sakes = grouped[pref];
+                const prefId = pref.replace(/[都道府県]/g, '');
                 
                 return `
-                    <div class="sake-item">
-                        <div class="action-buttons">
-                            <button class="edit-btn" onclick="editSake(${sake.id})">編集</button>
-                            <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+                    <div class="prefecture-group">
+                        <div class="prefecture-header" onclick="togglePrefecture('${pref}')">
+                            <span class="prefecture-name">${pref}</span>
+                            <span class="prefecture-count">${sakes.length}本</span>
                         </div>
-                        ${photoHtml}
-                        <div class="sake-name">${sake.name}</div>
-                        <div class="sake-info">
-                            ${sake.brewery} (${sake.prefecture})
-                            ${sake.classification ? '<span class="badge">' + sake.classification + '</span>' : ''}
+                        <div class="prefecture-items" id="pref-${prefId}">
+                            ${sakes.map(renderSakeItem).join('')}
                         </div>
-                        ${sake.date ? '<div class="sake-info">📅 ' + sake.date + '</div>' : ''}
-                        ${sake.nihonshuDo ? '<div class="sake-info">日本酒度: ' + sake.nihonshuDo + '</div>' : ''}
-                        ${sake.seimaibuai ? '<div class="sake-info">精米歩合: ' + sake.seimaibuai + '</div>' : ''}
-                        ${sake.alcohol ? '<div class="sake-info">アルコール度数: ' + sake.alcohol + '</div>' : ''}
-                        ${sake.hiire ? '<div class="sake-info">火入れ: ' + sake.hiire + '</div>' : ''}
-                        ${sake.place ? '<div class="sake-info">📍 ' + sake.place + '</div>' : ''}
-                        <div class="sake-info">
-                            味の評価: ${'★'.repeat(sake.tasteRating)}${'☆'.repeat(5-sake.tasteRating)}
-                            おすすめ度: ${'★'.repeat(sake.recommendRating)}${'☆'.repeat(5-sake.recommendRating)}
-                        </div>
-                        ${sake.memo ? '<div class="sake-memo">' + sake.memo + '</div>' : ''}
                     </div>
                 `;
             }).join('');
