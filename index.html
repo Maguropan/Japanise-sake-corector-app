@@ -84,6 +84,50 @@
             min-height: 80px;
         }
         
+        .search-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid #2563eb;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #1d4ed8;
+        }
+        
+        .search-clear {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #6b7280;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            display: none;
+        }
+        
+        .search-clear:hover {
+            background: #4b5563;
+        }
+        
+        .search-result-count {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
         .photo-upload-container {
             display: flex;
             gap: 10px;
@@ -536,6 +580,13 @@
     <div class="list-container">
         <h2>コレクション一覧</h2>
         
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="🔍 銘柄名・酒蔵名で検索..." oninput="handleSearch()">
+            <button class="search-clear" id="searchClear" onclick="clearSearch()">×</button>
+        </div>
+        
+        <div class="search-result-count" id="searchResultCount"></div>
+        
         <div class="tabs">
             <button class="tab active" onclick="switchTab('all')">すべて</button>
             <button class="tab" onclick="switchTab('prefecture')">都道府県別</button>
@@ -557,23 +608,67 @@
         }
 
         let collection = [];
+        let filteredCollection = [];
         let tasteRatingValue = 0;
         let recommendRatingValue = 0;
         let editingId = null;
         let frontPhotoData = null;
         let backPhotoData = null;
         let currentTab = 'all';
+        let searchQuery = '';
         
         // ページ読み込み時にデータを復元
         window.onload = function() {
             const saved = localStorage.getItem('sakeCollection');
             if (saved) {
                 collection = JSON.parse(saved);
+                filteredCollection = collection;
                 displayCollection();
                 displayPrefectureList();
             }
             updateStats();
         };
+        
+        // 検索処理
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const clearBtn = document.getElementById('searchClear');
+            
+            if (searchQuery) {
+                clearBtn.style.display = 'block';
+                filteredCollection = collection.filter(sake => {
+                    return sake.name.toLowerCase().includes(searchQuery) || 
+                           sake.brewery.toLowerCase().includes(searchQuery);
+                });
+            } else {
+                clearBtn.style.display = 'none';
+                filteredCollection = collection;
+            }
+            
+            updateSearchResultCount();
+            
+            if (currentTab === 'all') {
+                displayCollection();
+            } else {
+                displayPrefectureList();
+            }
+        }
+        
+        // 検索クリア
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            handleSearch();
+        }
+        
+        // 検索結果件数の表示
+        function updateSearchResultCount() {
+            const countDiv = document.getElementById('searchResultCount');
+            if (searchQuery) {
+                countDiv.textContent = `検索結果: ${filteredCollection.length}件`;
+            } else {
+                countDiv.textContent = '';
+            }
+        }
         
         // タブ切り替え
         function switchTab(tab) {
@@ -586,6 +681,7 @@
             if (tab === 'all') {
                 document.querySelector('.tab:first-child').classList.add('active');
                 document.getElementById('allTab').classList.add('active');
+                displayCollection();
             } else {
                 document.querySelector('.tab:last-child').classList.add('active');
                 document.getElementById('prefectureTab').classList.add('active');
@@ -688,8 +784,7 @@
             
             localStorage.setItem('sakeCollection', JSON.stringify(collection));
             resetForm();
-            displayCollection();
-            displayPrefectureList();
+            handleSearch(); // 検索を再実行
             updateStats();
         }
         
@@ -778,8 +873,7 @@
             if (confirm('削除しますか？')) {
                 collection = collection.filter(sake => sake.id !== id);
                 localStorage.setItem('sakeCollection', JSON.stringify(collection));
-                displayCollection();
-                displayPrefectureList();
+                handleSearch(); // 検索を再実行
                 updateStats();
             }
         }
@@ -827,25 +921,33 @@
         function displayCollection() {
             const listDiv = document.getElementById('sakeList');
             
-            if (collection.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center;color:#999;">まだ登録されていません</p>';
+            if (filteredCollection.length === 0) {
+                if (searchQuery) {
+                    listDiv.innerHTML = '<p style="text-align:center;color:#999;">検索結果が見つかりませんでした</p>';
+                } else {
+                    listDiv.innerHTML = '<p style="text-align:center;color:#999;">まだ登録されていません</p>';
+                }
                 return;
             }
             
-            listDiv.innerHTML = collection.map(renderSakeItem).join('');
+            listDiv.innerHTML = filteredCollection.map(renderSakeItem).join('');
         }
         
         function displayPrefectureList() {
             const listDiv = document.getElementById('prefectureList');
             
-            if (collection.length === 0) {
-                listDiv.innerHTML = '<p style="text-align:center;color:#999;">まだ登録されていません</p>';
+            if (filteredCollection.length === 0) {
+                if (searchQuery) {
+                    listDiv.innerHTML = '<p style="text-align:center;color:#999;">検索結果が見つかりませんでした</p>';
+                } else {
+                    listDiv.innerHTML = '<p style="text-align:center;color:#999;">まだ登録されていません</p>';
+                }
                 return;
             }
             
             // 都道府県ごとにグループ化
             const grouped = {};
-            collection.forEach(sake => {
+            filteredCollection.forEach(sake => {
                 if (!grouped[sake.prefecture]) {
                     grouped[sake.prefecture] = [];
                 }
