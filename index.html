@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="manifest.json">
+    <title>日本酒コレクター</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #2563eb;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .form-container, .list-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .stars {
+            display: flex;
+            gap: 5px;
+            cursor: pointer;
+        }
+        
+        .star {
+            font-size: 24px;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+        
+        .star.active {
+            color: #fbbf24;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #1d4ed8;
+        }
+        
+        .sake-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .sake-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .sake-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .sake-memo {
+            font-size: 14px;
+            color: #444;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        .delete-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            float: right;
+        }
+        
+        .delete-btn:hover {
+            background: #b91c1c;
+        }
+        
+        h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #2563eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🍶 日本酒コレクター</h1>
+    
+    <div class="stats">
+        <div class="stat-item">
+            <div class="stat-number" id="totalCount">0</div>
+            <div class="stat-label">総数</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number" id="prefCount">0</div>
+            <div class="stat-label">都道府県</div>
+        </div>
+    </div>
+    
+    <div class="form-container">
+        <h2>新規登録</h2>
+        
+        <div class="section-title">基本情報</div>
+        
+        <div class="form-group">
+            <label>銘柄名 *</label>
+            <input type="text" id="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label>酒蔵名 *</label>
+            <input type="text" id="brewery" required>
+        </div>
+        
+        <div class="form-group">
+            <label>都道府県 *</label>
+            <select id="prefecture" required>
+                <option value="">選択してください</option>
+                <option value="北海道">北海道</option>
+                <option value="青森県">青森県</option>
+                <option value="岩手県">岩手県</option>
+                <option value="宮城県">宮城県</option>
+                <option value="秋田県">秋田県</option>
+                <option value="山形県">山形県</option>
+                <option value="福島県">福島県</option>
+                <option value="茨城県">茨城県</option>
+                <option value="栃木県">栃木県</option>
+                <option value="群馬県">群馬県</option>
+                <option value="埼玉県">埼玉県</option>
+                <option value="千葉県">千葉県</option>
+                <option value="東京都">東京都</option>
+                <option value="神奈川県">神奈川県</option>
+                <option value="新潟県">新潟県</option>
+                <option value="富山県">富山県</option>
+                <option value="石川県">石川県</option>
+                <option value="福井県">福井県</option>
+                <option value="山梨県">山梨県</option>
+                <option value="長野県">長野県</option>
+                <option value="岐阜県">岐阜県</option>
+                <option value="静岡県">静岡県</option>
+                <option value="愛知県">愛知県</option>
+                <option value="三重県">三重県</option>
+                <option value="滋賀県">滋賀県</option>
+                <option value="京都府">京都府</option>
+                <option value="大阪府">大阪府</option>
+                <option value="兵庫県">兵庫県</option>
+                <option value="奈良県">奈良県</option>
+                <option value="和歌山県">和歌山県</option>
+                <option value="鳥取県">鳥取県</option>
+                <option value="島根県">島根県</option>
+                <option value="岡山県">岡山県</option>
+                <option value="広島県">広島県</option>
+                <option value="山口県">山口県</option>
+                <option value="徳島県">徳島県</option>
+                <option value="香川県">香川県</option>
+                <option value="愛媛県">愛媛県</option>
+                <option value="高知県">高知県</option>
+                <option value="福岡県">福岡県</option>
+                <option value="佐賀県">佐賀県</option>
+                <option value="長崎県">長崎県</option>
+                <option value="熊本県">熊本県</option>
+                <option value="大分県">大分県</option>
+                <option value="宮崎県">宮崎県</option>
+                <option value="鹿児島県">鹿児島県</option>
+                <option value="沖縄県">沖縄県</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>飲んだ日</label>
+            <input type="date" id="date">
+        </div>
+        
+        <div class="section-title">日本酒情報</div>
+        
+        <div class="form-group">
+            <label>特定名称</label>
+            <select id="classification">
+                <option value="">選択してください</option>
+                <option value="普通酒">普通酒</option>
+                <option value="本醸造酒">本醸造酒</option>
+                <option value="特別本醸造酒">特別本醸造酒</option>
+                <option value="純米酒">純米酒</option>
+                <option value="特別純米酒">特別純米酒</option>
+                <option value="吟醸酒">吟醸酒</option>
+                <option value="純米吟醸酒">純米吟醸酒</option>
+                <option value="大吟醸酒">大吟醸酒</option>
+                <option value="純米大吟醸酒">純米大吟醸酒</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>日本酒度</label>
+            <input type="text" id="nihonshuDo" placeholder="例: +5">
+        </div>
+        
+        <div class="form-group">
+            <label>精米歩合</label>
+            <input type="text" id="seimaibuai" placeholder="例: 50%">
+        </div>
+        
+        <div class="form-group">
+            <label>アルコール度数</label>
+            <input type="text" id="alcohol" placeholder="例: 15度">
+        </div>
+        
+        <div class="form-group">
+            <label>火入れ</label>
+            <select id="hiire">
+                <option value="">選択してください</option>
+                <option value="生酒">生酒</option>
+                <option value="火入れ">火入れ</option>
+                <option value="不明">不明</option>
+            </select>
+        </div>
+        
+        <div class="section-title">個人記録</div>
+        
+        <div class="form-group">
+            <label>味の評価</label>
+            <div class="stars" id="tasteRating">
+                <span class="star" data-value="1">★</span>
+                <span class="star" data-value="2">★</span>
+                <span class="star" data-value="3">★</span>
+                <span class="star" data-value="4">★</span>
+                <span class="star" data-value="5">★</span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>おすすめ度</label>
+            <div class="stars" id="recommendRating">
+                <span class="star" data-value="1">★</span>
+                <span class="star" data-value="2">★</span>
+                <span class="star" data-value="3">★</span>
+                <span class="star" data-value="4">★</span>
+                <span class="star" data-value="5">★</span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>味わいメモ</label>
+            <textarea id="memo" placeholder="香り、味わいの印象を自由に記入..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label>飲んだ場所</label>
+            <input type="text" id="place" placeholder="例: 自宅、居酒屋◯◯">
+        </div>
+        
+        <button onclick="addSake()">登録する</button>
+    </div>
+    
+    <div class="list-container">
+        <h2>コレクション一覧</h2>
+        <div id="sakeList"></div>
+    </div>
+
+    <script>
+        // Service Worker登録（PWA化）
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+
+        let collection = [];
+        let tasteRatingValue = 0;
+        let recommendRatingValue = 0;
+        
+        // ページ読み込み時にデータを復元
+        window.onload = function() {
+            const saved = localStorage.getItem('sakeCollection');
+            if (saved) {
+                collection = JSON.parse(saved);
+                displayCollection();
+            }
+            updateStats();
+        };
+        
+        // 星評価の設定
+        document.querySelectorAll('.stars').forEach(container => {
+            const stars = container.querySelectorAll('.star');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const value = parseInt(this.dataset.value);
+                    if (container.id === 'tasteRating') {
+                        tasteRatingValue = value;
+                    } else {
+                        recommendRatingValue = value;
+                    }
+                    updateStars(container, value);
+                });
+            });
+        });
+        
+        function updateStars(container, value) {
+            const stars = container.querySelectorAll('.star');
+            stars.forEach((star, index) => {
+                if (index < value) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+        
+        function addSake() {
+            const name = document.getElementById('name').value;
+            const brewery = document.getElementById('brewery').value;
+            const prefecture = document.getElementById('prefecture').value;
+            
+            if (!name || !brewery || !prefecture) {
+                alert('必須項目を入力してください');
+                return;
+            }
+            
+            const sake = {
+                id: Date.now(),
+                name: name,
+                brewery: brewery,
+                prefecture: prefecture,
+                date: document.getElementById('date').value,
+                classification: document.getElementById('classification').value,
+                nihonshuDo: document.getElementById('nihonshuDo').value,
+                seimaibuai: document.getElementById('seimaibuai').value,
+                alcohol: document.getElementById('alcohol').value,
+                hiire: document.getElementById('hiire').value,
+                tasteRating: tasteRatingValue,
+                recommendRating: recommendRatingValue,
+                memo: document.getElementById('memo').value,
+                place: document.getElementById('place').value
+            };
+            
+            collection.push(sake);
+            localStorage.setItem('sakeCollection', JSON.stringify(collection));
+            
+            // フォームをリセット
+            document.getElementById('name').value = '';
+            document.getElementById('brewery').value = '';
+            document.getElementById('prefecture').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('classification').value = '';
+            document.getElementById('nihonshuDo').value = '';
+            document.getElementById('seimaibuai').value = '';
+            document.getElementById('alcohol').value = '';
+            document.getElementById('hiire').value = '';
+            document.getElementById('memo').value = '';
+            document.getElementById('place').value = '';
+            tasteRatingValue = 0;
+            recommendRatingValue = 0;
+            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+            
+            displayCollection();
+            updateStats();
+            alert('登録しました！');
+        }
+        
+        function deleteSake(id) {
+            if (confirm('削除しますか？')) {
+                collection = collection.filter(sake => sake.id !== id);
+                localStorage.setItem('sakeCollection', JSON.stringify(collection));
+                displayCollection();
+                updateStats();
+            }
+        }
+        
+        function displayCollection() {
+            const listDiv = document.getElementById('sakeList');
+            
+            if (collection.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center;color:#999;">まだ登録されていません</p>';
+                return;
+            }
+            
+            listDiv.innerHTML = collection.map(sake => `
+                <div class="sake-item">
+                    <button class="delete-btn" onclick="deleteSake(${sake.id})">削除</button>
+                    <div class="sake-name">${sake.name}</div>
+                    <div class="sake-info">
+                        ${sake.brewery} (${sake.prefecture})
+                        ${sake.classification ? '<span class="badge">' + sake.classification + '</span>' : ''}
+                    </div>
+                    ${sake.date ? '<div class="sake-info">📅 ' + sake.date + '</div>' : ''}
+                    ${sake.nihonshuDo ? '<div class="sake-info">日本酒度: ' + sake.nihonshuDo + '</div>' : ''}
+                    ${sake.seimaibuai ? '<div class="sake-info">精米歩合: ' + sake.seimaibuai + '</div>' : ''}
+                    ${sake.alcohol ? '<div class="sake-info">アルコール度数: ' + sake.alcohol + '</div>' : ''}
+                    ${sake.hiire ? '<div class="sake-info">火入れ: ' + sake.hiire + '</div>' : ''}
+                    ${sake.place ? '<div class="sake-info">📍 ' + sake.place + '</div>' : ''}
+                    <div class="sake-info">
+                        味の評価: ${'★'.repeat(sake.tasteRating)}${'☆'.repeat(5-sake.tasteRating)}
+                        おすすめ度: ${'★'.repeat(sake.recommendRating)}${'☆'.repeat(5-sake.recommendRating)}
+                    </div>
+                    ${sake.memo ? '<div class="sake-memo">' + sake.memo + '</div>' : ''}
+                </div>
+            `).join('');
+        }
+        
+        function updateStats() {
+            document.getElementById('totalCount').textContent = collection.length;
+            const uniquePrefectures = new Set(collection.map(s => s.prefecture));
+            document.getElementById('prefCount').textContent = uniquePrefectures.size;
+        }
+    </script>
+</body>
+</html>
